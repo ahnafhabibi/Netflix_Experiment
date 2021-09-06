@@ -9,8 +9,8 @@ output: pdf_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 ## Executive Summary
-Due to the large size library of movies and TV shows of Netflix, users often experience choice-overload and end up losing interest and not watch anything at all. This problem potentially may increase churn rate hence the objective is to minimize average browsing time by exploring 3 factors- Tile Size, Match Score, Preview Length which are chosen based on the “Top Picks For…” row of the Netflix homepage. Our experimental journey is based on the philosophy of Response Surface Methodology where information gained in one phase is used to inform decisions in next phases. In our first phase, we performed a $2^{3-1}$ fractional factorial experiment to save cost in our data collection process considering there are many phases where we need to collect additional data. The main effect plots of each of the factor provided evidence that they influence the response. Moreover, we performed formal hypothesis tests and concluded based on the Principle of effect Sparsity that each of our three factors significantly influence the response. With this valuable information, we moved to phase II of our experimental journey where the goal is to locate the vicinity of the optimum. In order to do this, we perform the method of steepest descent which involves two components- 1) locate a small localized region which we believe contains the true optimum by the method of steepest descent algorithm 2) check for curvature which signifies that we are in the vicinity of the optimum. We required 5 steps in our steepest descent algorithm, and we followed it with a formal test of curvature where the 
-p-value (2.78e-12) was practically zero. Hence, we confirmed that we are in fact in the vicinity of the optimum. With this valuable information, we set out to phase III where we began by estimating this small localized region with a full second order model. The design chosen was Central Composite Design (CCD) as it made our experimental journey more efficient by using data from phase II. Additionally, the axial conditions were chosen by considering a spherical structure as we wanted our conditions to be equidistant from our center point condition and it ensures precise estimate of each condition. With the design defined, we fitted a full second order model and calculated the stationary point for our estimated model. After converting to natural units, the optimum condition was (0.332,66,90) for tile size, match score and preview length respectively. The estimated browsing time was 12.3 seconds, almost a  20 percent improvement from the default values of factors , which had average browsing time of 15 seconds.
+Due to the large size library of movies and TV shows of Netflix, users often experience choice-overload and end up losing interest and not watch anything at all. This problem potentially may increase churn rate hence the objective is to minimize average browsing time by exploring 3 factors- Tile Size, Match Score, Preview Length which are chosen based on the “Top Picks For…” row of the Netflix homepage. Our experimental journey is based on the philosophy of Response Surface Methodology where information gained in one phase is used to inform decisions in next phases. In our first phase, we performed a $2^{3}$ full factorial experiment to avoid confounding effects. Moreover, we performed formal hypothesis tests and concluded that Match.Score and Prev.Length are active while Tile.Size is not. With this valuable information, we moved to phase II of our experimental journey where the goal is to locate the vicinity of the optimum. In order to do this, we perform the method of steepest descent which involves two components- 1) locate a small localized region which we believe contains the true optimum by the method of steepest descent algorithm 2) check for curvature which signifies that we are in the vicinity of the optimum. We required 5 steps in our steepest descent algorithm, and we followed it with a formal test of curvature where the 
+p-value (2.78e-12) was practically zero. Hence, we confirmed that we are in fact in the vicinity of the optimum. With this valuable information, we set out to phase III where we began by estimating this small localized region with a full second order model. The design chosen was Central Composite Design (CCD) as it made our experimental journey more efficient by using data from phase II. Additionally, the axial conditions were chosen by considering a cuboidal structure as we anticipated our optimal conditions to be in the corners. With the design defined, we fitted a full second order model and calculated the stationary point for our estimated model. After converting to natural units, the optimum condition was (72,80) for match score and preview length respectively. The estimated browsing time was 11.3 seconds, almost a  90 percent improvement from the default values of factors , which had average browsing time of 20 seconds.
 
 \newpage
 
@@ -58,8 +58,8 @@ mesh <- function(x, y) {
 
 ```
 
-```{r,echo=FALSE,message=FALSE}
-netflix<-read.csv("RESULTS_20757532_2021-08-06.csv")
+```{r,echo=FALSE,message=FALSE,warning=FALSE,include=FALSE}
+netflix<-read.csv("RESULTS_20757532_2021-08-24.csv")
 drop<-c("Prev.Type")
 netflix<-netflix[,!names(netflix) %in% drop]
 kf<-netflix
@@ -68,7 +68,7 @@ netflix <- data.frame(Tile.Size = convert.N.to.C(U = netflix$Tile.Size, UH = 0.3
                   Prev.Length = convert.N.to.C(U = netflix$Prev.Length, UH = 120, UL = 100),Browse.Time=netflix$Browse)
 model<-lm(netflix$Browse.Time~Tile.Size*Match.Score*Prev.Length,data=netflix)
 summary(model)
-interaction.plot(netflix$Match.Score,netflix$Prev.Length,netflix$Browse.Time)
+#interaction.plot(netflix$Match.Score,netflix$Prev.Length,netflix$Browse.Time)
 ```
 
 We start our experimental journey through factor screening experiment to determine which factors influence our response. This will eliminate the insignificant factors in the next phases of the experimentation process which will help us to be more efficient and may even save costs in our data collection process. The factor screening experiment is constructed through the lens of QPDAC which is Question, Plan, Data, Analysis and Conclusion. We will explain each of the steps and their roles in the factor screening experiment below.
@@ -80,7 +80,7 @@ The objective for the factor screening experiment is coherent and self-explanato
 #### Plan and Data:
 In the planning stage, we want to state our response variable, state the different factors, experiment units and how our experimental conditions are constructed. The response variable is Browsing time and the design factors are Tile size, Match Score and Preview Length.
 
-Now, let us explain the design process and how our experimental conditions are constructed. We have decided to perform a $2^{3-1}$ fractional factorial experiment to be more efficient and to save cost in our data collection process. Moreover, it is an economical way to investigate 3 factors in $2^{3-1}$ conditions and since our experimental journey is a sequential process, we need to consider resource allocation for the next processes as well. The low and high levels of these factors for this experiment are shown below: 
+Now, let us explain the design process and how our experimental conditions are constructed. We have decided to perform a $2^{3}$ full factorial experiment to avoid the ambiguity that arises from confounding. Moreover, it is an economical way to investigate 3 factors in $2^{3-1}$ conditions and since our experimental journey is a sequential process, we need to consider resource allocation for the next processes as well. The low and high levels of these factors for this experiment are shown below: 
 
 ```{r,echo=FALSE,message=FALSE,warning=FALSE}
 Factor<-c("Tile.Size","Match.Score","Prev.Length")
@@ -105,12 +105,13 @@ x3<-c(-1,-1,1,1)
 df<-aggregate(kf$Browse.Time, by = list(x1=kf$Tile.Size, x2 = kf$Match.Score,x3=kf$Prev.Length), FUN = mean)
 df<-data.frame(df)
 df<-setNames(df,c("Tile Size","Match Score","Preview Length","Average Browsing Time"))
+knitr::kable(df)
 df$x1<-x1
 df$x2<-x2
 df$x3<-x3
 df$Condition<-c(1,2,3,4)
 df<-df[,c(8,1,5,2,6,3,7,4)]
-knitr::kable(df)
+#knitr::kable(df)
 #print(df,row.names = FALSE)
 ```
 For each condition as outlined above, we have decided to consider n=100 netflix users who are the experimental units in the experiment. Moreover, n=100 for each condition is sufficient for enough power in our experiment and the users are also selected at random so the proportions are same.
@@ -118,30 +119,27 @@ For each condition as outlined above, we have decided to consider n=100 netflix 
 #### Analysis:
 We will begin with exploratory data analysis where we will observe the main effects plot of our factors. 
 
-```{r,echo=FALSE,message=FALSE,fig.width=6,fig.height=3}
+```{r,echo=FALSE,message=FALSE,fig.width=6,fig.height=3,warning=FALSE}
 par(mfrow=c(1,3))
 library(gplots)
 plotmeans(formula=netflix$Browse.Time~netflix$Tile.Size,ylab = "Browsing Time",xlab = "Tile Size",xaxt = "n")
 axis(side = 1, at = c(1,2), labels = c("0.1", "0.3"))
 plotmeans(formula=netflix$Browse.Time~netflix$Match.Score,ylab = "Browsing Time",xlab = "Match Score",xaxt = "n")
-axis(side = 1, at = c(1,2), labels = c("0.1", "0.3"))
+axis(side = 1, at = c(1,2), labels = c("80", "100"))
 plotmeans(formula=netflix$Browse.Time~netflix$Prev.Length,ylab = "Browsing Time",xlab = "Preview Length",xaxt = "n")
-axis(side = 1, at = c(1,2), labels = c("0.1", "0.3"))
+axis(side = 1, at = c(1,2), labels = c("100", "120"))
 ```
 ```{r,echo=FALSE,message=FALSE,include=FALSE}
-model<-lm(netflix$Browse.Time~Tile.Size+Match.Score+Prev.Length,data=netflix)
+#model<-lm(netflix$Browse.Time~Tile.Size+Match.Score+Prev.Length,data=netflix)
 summary(model)
-summary(model)$coefficients[,4]*3
 aggregate(netflix$Browse.Time, by = list(x1=netflix$Tile.Size, x2 = netflix$Match.Score,x3=netflix$Prev.Length), FUN = mean)
 ```
-From the main effect plots above, it seems that browsing time changes significantly when we change the factor level from "low" to "high" for each of the factors. Hence, all of our factors seems to influence Browsing time significantly. Let us perform formal hypothesis tests to confirm this statement.
-
-We are going to fit a linear regression model with linear predictor $\beta_0 + \beta_1x_1 + \beta_2x_2 + \beta_3x_3$. To test the significance of a factor, we are going to test three hypothesis which are $H_0: \beta_j=0$ for j=1,2,3. These hypothesis determine whether the main effects are significantly different from zero hence conclude whether the factors influence the response. Since we tested multiple hypothesis, in particular 3, we need to address the multiple testing problem. However, even with the strictest correction which is Bonferroni correction, our adjusted observed p-values(6.722183e-28, 2.394960e-62, 8.359811e-48) for our hypothesis, are practically zero.
+From the main effect plots above, it seems that browsing time changes significantly when we change the factor level from "low" to "high" for each of the factors. Hence, all of our factors seems to influence Browsing time significantly. However, from our summary output, we can see only Match Score and Preview length are active factors.
 
 #### Conclusion:
-Since we performed a fractional factorial experiment, we must be aware of the confounding effects in our experiment, in particular, all of our main effects are confounded with interaction effects as detailed in the design process. However, based on the Principle of effect sparsity, we know that these interaction terms are less likely to be significant than our main effect terms. Our adjusted p-values, found in analysis portion of the experiment above, are extremely close to zero hence they are all significant. So, based on the Principle of effect sparsity, we conclude that all main effects significantly influences our response. Hence, Tile Size, Match Score and Preview Length are all significant factors.
+Since we performed a full factorial experiment, we can conclude that only Match Score and Preview Length significantly influences our response without any confounding effects.
 
-```{r}
+```{r,echo=FALSE,message=FALSE,fig.width=6,fig.height=3,warning=FALSE,include=FALSE}
 initial<-read.csv("RESULTS_20757532_2021-08-24-2.csv")
 a0<-aggregate(initial$Browse.Time, by = list(x1 = initial$Match.Score,x2=initial$Prev.Length), FUN = mean)
 #initial<-rbind(netflix,initial)
@@ -218,7 +216,7 @@ pstd.cond$Browse.Time<-c(a1$x,a2$x,a3$x,a4$x,a5$x)
 pstd.cond
 ```
 
-```{r}
+```{r,echo=FALSE,message=FALSE,fig.width=6,fig.height=3,warning=FALSE,include=FALSE}
 vicinity<-read.csv("RESULTS_20757532_2021-08-24-10.csv")
 head(vicinity)
 drop<-c("Prev.Type")
@@ -258,21 +256,22 @@ x3<-c(-1,-1,0,1,1)
 df<-aggregate(vicinity$Browse.Time, by = list(x1=vicinity$Tile.Size, x2 = vicinity$Match.Score,x3=vicinity$Prev.Length), FUN = mean)
 df<-data.frame(df)
 df<-setNames(df,c("Tile Size","Match Score","Preview Length","Average Browsing Time"))
+knitr::kable(df)
 df$x1<-x1
 df$x2<-x2
 df$x3<-x3
 df$Condition<-Condition
 kf<-df[,c(8,1,5,2,6,3,7,4)]
-knitr::kable(kf)
+#knitr::kable(kf)
 ```
-Note that similar to Phase I, x3 is aliased with x1 and x2 with x3=x1x2 as it will help us to save resources. Hence, we just collected data (n=100) for 4 conditions around this center point. Now, with these 5 conditions we cannot separately estimate all of the coefficients in a second order model hence instead we fitted a modified model with linear predictor $\beta_0 + \beta_1x_1 + \beta_2x_2 + \beta_3x_3 +\beta_{PQ}x_{PQ}$ where $\beta_{PQ}$ simultaneously estimates the coefficients of the second order terms and $x_{PQ}$ is 0 when (x1,x2) is (0,0) or 1 otherwise. The reason for using a modified linear model is to save resources. However, we must be aware that our hypothesis conclusion assumes that second order terms if considered in a full second order model, have the same sign and we are not in a saddle point. This is a very practical route to consider as fitting a full second order model requires collecting additional data when we have to allocate resources to other phases as well.
+We collected data (n=100) for 4 conditions around this center point. Now, with these 5 conditions we cannot separately estimate all of the coefficients in a second order model hence instead we fitted a modified model with linear predictor $\beta_0 + \beta_1x_1 + \beta_2x_2 + \beta_3x_3 +\beta_{PQ}x_{PQ}$ where $\beta_{PQ}$ simultaneously estimates the coefficients of the second order terms and $x_{PQ}$ is 0 when (x1,x2) is (0,0) or 1 otherwise. The reason for using a modified linear model is to save resources. However, we must be aware that our hypothesis conclusion assumes that second order terms if considered in a full second order model, have the same sign and we are not in a saddle point. This is a very practical route to consider as fitting a full second order model requires collecting additional data when we have to allocate resources to other phases as well.
 
 #### Conclusion:
 After performing the test of overall curvature, we find that the p-value is 2.78e-12, which is practically zero. Therefore, we do not need to worry about the assumption error. Since our p-value is practically zero, we conclude that there is a quadratic curvature and we are in fact in the vicinity of the optimum.
 
 
 ## Phase III: Response Optimization
-```{r}
+```{r,echo=FALSE,message=FALSE,fig.width=6,fig.height=3,warning=FALSE,include=FALSE}
 # head(vicinity)
 # df1<-read.csv("RESULTS_20757532_2021-08-12-2.csv")
 # df1
@@ -317,20 +316,20 @@ In Phase II, we identified a small, localized region which we believe contains t
 The objective is to locate the optimum operating condition in the small localized region we identified in Phase II. 
 
 #### Plan, Data and Analysis:
-It is a wise and practical decision to use central composite design (CCD) to estimate our full second order response surface model because we already have the two-level factorial conditions, and the center point conditions from our phase II experiment. Hence, we just need to gather data for our axial, or star, conditions. This is a great way to save resources and be more efficient in our data collection process. In particular, the central condition was chosen from step 4 in our steepest ascent algorithm as it was the optimal condition in phase II and the low and high levels were chosen considering step 3,4,5 such that it is wide enough to include the quadratic curvature captured in step 4 and 5. Additionally, the axial conditions are captured by considering a spherical design with $a=\sqrt2$ because all of our conditions are equidistant from the center point conditions. Moreover, the estimate of our response will be equally precise at each condition. Based on the conditions defined, we collected data and below given are the average booking rate for each of the conditions we defined. 
+It is a wise and practical decision to use central composite design (CCD) to estimate our full second order response surface model because we already have the two-level factorial conditions, and the center point conditions from our phase II experiment. Hence, we just need to gather data for our axial, or star, conditions. This is a great way to save resources and be more efficient in our data collection process. In particular, the central condition was chosen from step 4 in our steepest ascent algorithm as it was the optimal condition in phase II and the low and high levels were chosen considering step 3,4,5 such that it is wide enough to include the quadratic curvature captured in step 4 and 5. Additionally, the axial conditions are captured by considering a cube design with $a=1$ because we anticipate our optimum conditions are at the corners. Based on the conditions defined, we collected data and below given are the average booking rate for each of the conditions we defined. 
 ````{r,echo=FALSE,message=FALSE,R.options=list(width=100)}
-Condition<-c(1,2,3,4,5,6,7,8,9)
+# Condition<-c(1,2,3,4,5,6,7,8,9)
 a1<-setNames(a1,c("Tile Size","Match Score","Preview Length","Average Browsing Time"))
-a1$x1<-c(1,-1,0,-1.5,0,1.5,0,-1,1)
-a1$x2<-c(-1,1,-1.5,0,0,0,1.5,-1,1)
-a1$x3<-c(-1,-1,0,0,0,0,0,1,1)
-a1$Condition<-Condition
-a1<-a1[,c(8,1,5,2,6,3,7,4)]
+# a1$x1<-c(1,-1,0,-1.5,0,1.5,0,-1,1)
+# a1$x2<-c(-1,1,-1.5,0,0,0,1.5,-1,1)
+# a1$x3<-c(-1,-1,0,0,0,0,0,1,1)
+# a1$Condition<-Condition
+# a1<-a1[,c(8,1,5,2,6,3,7,4)]
 knitr::kable(a1)
 #print(a1,row.names = FALSE)
 ```
-Note, since Match Score is an integer, the value of a is rounded up to be 1.5. Based on the conditions defined and data collected, we fitted a full second order model. We, then, proceeded to calculate the stationary point of our estimated full order model and found out that the natural optimum conditions are 
-(0.332,66, 90) for tile size, match score and preview length respectively.
+Based on the conditions defined and data collected, we fitted a full second order model. We, then, proceeded to calculate the stationary point of our estimated full order model and found out that the natural optimum conditions are 
+(72, 80) for  match score and preview length respectively.
 
 #### Conclusion:
-The estimated average browsing time from our model is 12.3 seconds with confidence interval [12.09459 12.50825]. This is a massive improvement of approximately 20 percent from our default set of values of the factors which gave an average browsing time of 15 seconds. One limitations is that we assumed that this is the global optimum which is a practical assumption as otherwise we need to collect additional data and perform Phase II again to see if we can find another valley that may contain another optimum small localized region. However, a 20 percent improvement in average browsing time will generate Netflix more revenue than it was generating before which is a positive step for the company.
+The estimated average browsing time from our model is 11.3 seconds with confidence interval [11.20711 11.47115]. This is a massive improvement of approximately 90 percent from our default set of values of the factors which gave an average browsing time of 20 seconds. One limitations is that we assumed that this is the global optimum which is a practical assumption as otherwise we need to collect additional data and perform Phase II again to see if we can find another valley that may contain another optimum small localized region. However, a 90 percent improvement in average browsing time will generate Netflix more revenue than it was generating before which is a positive step for the company.
